@@ -4,6 +4,7 @@
 // PLUGINLIB_EXPORT_CLASS(AirsimROSWrapper, nodelet::Nodelet)
 #include "common/AirSimSettings.hpp"
 #include <tf2_sensor_msgs/tf2_sensor_msgs.h>
+#include "std_msgs/String.h"
 
 constexpr char AirsimROSWrapper::CAM_YML_NAME[];
 constexpr char AirsimROSWrapper::WIDTH_YML_NAME[];
@@ -179,6 +180,7 @@ void AirsimROSWrapper::create_ros_pubs_from_settings_json()
                 boost::bind(&AirsimROSWrapper::land_srv_cb, this, _1, _2, vehicle_ros->vehicle_name));
 
             // vehicle_ros.reset_srvr = nh_private_.advertiseService(curr_vehicle_name + "/reset",&AirsimROSWrapper::reset_srv_cb, this);
+            drone->drone_state_pub = nh_private_.advertise<std_msgs::String>(curr_vehicle_name + "/drone_state", 10);
         }
         else {
             auto car = static_cast<CarROS*>(vehicle_ros.get());
@@ -310,6 +312,8 @@ void AirsimROSWrapper::create_ros_pubs_from_settings_json()
 
         takeoff_group_srvr_ = nh_private_.advertiseService("group_of_robots/takeoff", &AirsimROSWrapper::takeoff_group_srv_cb, this);
         land_group_srvr_ = nh_private_.advertiseService("group_of_robots/land", &AirsimROSWrapper::land_group_srv_cb, this);
+
+        
     }
 
     // todo add per vehicle reset in AirLib API
@@ -503,6 +507,10 @@ void AirsimROSWrapper::vel_cmd_body_frame_cb(const airsim_ros_pkgs::VelCmd::Cons
     // airsim uses degrees
     drone->vel_cmd.yaw_mode.yaw_or_rate = math_common::rad2deg(msg->twist.angular.z);
     drone->has_vel_cmd = true;
+
+    std_msgs::String drone_status_msg;
+    drone_status_msg.data = "exec_cmd";
+    drone->drone_state_pub.publish(drone_status_msg);
 }
 
 void AirsimROSWrapper::vel_cmd_group_body_frame_cb(const airsim_ros_pkgs::VelCmdGroup& msg)
@@ -564,6 +572,10 @@ void AirsimROSWrapper::vel_cmd_world_frame_cb(const airsim_ros_pkgs::VelCmd::Con
     drone->vel_cmd.yaw_mode.is_rate = true;
     drone->vel_cmd.yaw_mode.yaw_or_rate = math_common::rad2deg(msg->twist.angular.z);
     drone->has_vel_cmd = true;
+
+    std_msgs::String drone_status_msg;
+    drone_status_msg.data = "exec_cmd";
+    drone->drone_state_pub.publish(drone_status_msg);
 }
 
 // this is kinda unnecessary but maybe it makes life easier for the end user.
