@@ -206,8 +206,6 @@ private:
         ros::Subscriber vel_cmd_body_frame_sub;
         ros::Subscriber vel_cmd_world_frame_sub;
 
-        ros::Publisher drone_state_pub;
-
         ros::ServiceServer takeoff_srvr;
         ros::ServiceServer land_srvr;
 
