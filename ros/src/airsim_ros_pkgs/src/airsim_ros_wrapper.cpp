@@ -180,7 +180,7 @@ void AirsimROSWrapper::create_ros_pubs_from_settings_json()
                 boost::bind(&AirsimROSWrapper::land_srv_cb, this, _1, _2, vehicle_ros->vehicle_name));
 
             // vehicle_ros.reset_srvr = nh_private_.advertiseService(curr_vehicle_name + "/reset",&AirsimROSWrapper::reset_srv_cb, this);
-            drone->drone_state_pub = nh_private_.advertise<std_msgs::String>(curr_vehicle_name + "/drone_state", 10);
+            drone->drone_state_pub = nh_private_.advertise<std_msgs::String>(curr_vehicle_name + "/drone_state", 1);
         }
         else {
             auto car = static_cast<CarROS*>(vehicle_ros.get());
@@ -1157,6 +1157,10 @@ void AirsimROSWrapper::update_commands()
                                                              drone->vehicle_name);
             }
             drone->has_vel_cmd = false;
+
+            std_msgs::String drone_status_msg;
+            drone_status_msg.data = "idle";
+            drone->drone_state_pub.publish(drone_status_msg);
         }
         else {
             // send control commands from the last callback to airsim
