@@ -63,6 +63,7 @@ STRICT_MODE_OFF //todo what does this do?
 #include <tf2/convert.h>
 #include <unordered_map>
 #include <memory>
+#include <kr_mav_msgs/PositionCommand.h>
     // #include "nodelet/nodelet.h"
 
     struct SimpleMatrix
@@ -234,6 +235,7 @@ private:
     // void vel_cmd_body_frame_cb(const airsim_ros_pkgs::VelCmd& msg, const std::string& vehicle_name);
     void gimbal_angle_quat_cmd_cb(const airsim_ros_pkgs::GimbalAngleQuatCmd& gimbal_angle_quat_cmd_msg);
     void gimbal_angle_euler_cmd_cb(const airsim_ros_pkgs::GimbalAngleEulerCmd& gimbal_angle_euler_cmd_msg);
+    void pos_cmd_cb(const kr_mav_msgs::PositionCommand& pos_cmd_msg);
 
     // commands
     void car_cmd_cb(const airsim_ros_pkgs::CarControls::ConstPtr& msg, const std::string& vehicle_name);
@@ -387,6 +389,7 @@ private:
 
     ros::Subscriber gimbal_angle_quat_cmd_sub_;
     ros::Subscriber gimbal_angle_euler_cmd_sub_;
+    ros::Subscriber pos_cmd_sub_;
 
     static constexpr char CAM_YML_NAME[] = "camera_name";
     static constexpr char WIDTH_YML_NAME[] = "image_width";

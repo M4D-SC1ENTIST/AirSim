@@ -115,6 +115,7 @@ void AirsimROSWrapper::create_ros_pubs_from_settings_json()
     gimbal_angle_quat_cmd_sub_ = nh_private_.subscribe("gimbal_angle_quat_cmd", 50, &AirsimROSWrapper::gimbal_angle_quat_cmd_cb, this);
     gimbal_angle_euler_cmd_sub_ = nh_private_.subscribe("gimbal_angle_euler_cmd", 50, &AirsimROSWrapper::gimbal_angle_euler_cmd_cb, this);
     origin_geo_point_pub_ = nh_private_.advertise<airsim_ros_pkgs::GPSYaw>("origin_geo_point", 10);
+    pos_cmd_sub_ = nh_private_.subscribe("/quadrotor/position_cmd",50,&AirsimROSWrapper::pos_cmd_cb,this, ros::TransportHints().tcpNoDelay());
 
     airsim_img_request_vehicle_name_pair_vec_.clear();
     image_pub_vec_.clear();
@@ -640,6 +641,19 @@ void AirsimROSWrapper::gimbal_angle_euler_cmd_cb(const airsim_ros_pkgs::GimbalAn
         ROS_WARN("%s", ex.what());
     }
 }
+
+
+void AirsimROSWrapper::pos_cmd_cb(const kr_mav_msgs::PositionCommand& pos_cmd_msg){
+    
+    float vx = pos_cmd_msg.velocity.x;
+    float vy = pos_cmd_msg.velocity.y;
+    float vz = pos_cmd_msg.velocity.z;
+    
+    static_cast<msr::airlib::MultirotorRpcLibClient*>(airsim_client_.get())->moveByVelocityAsync(vx, vy, vz, 0.01);
+    
+    return;
+}
+
 
 airsim_ros_pkgs::CarState AirsimROSWrapper::get_roscarstate_msg_from_car_state(const msr::airlib::CarApiBase::CarState& car_state) const
 {

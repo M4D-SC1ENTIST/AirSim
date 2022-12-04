@@ -42,6 +42,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf2_ros
   tf2_sensor_msgs
   tf2_geometry_msgs
+  kr_mav_msgs
 )
 
 add_message_files(
