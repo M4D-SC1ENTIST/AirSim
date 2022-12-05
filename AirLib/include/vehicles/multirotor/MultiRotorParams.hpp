@@ -320,9 +320,9 @@ namespace airlib
             //any value above the maximum would result in the motors not being able to lift the body even at max thrust,
             //and any value below the minimum would cause the drone to fly upwards on idling throttle (50% of the max throttle if using SimpleFlight)
             //Note that the default idle throttle percentage is 50% if you are using SimpleFlight
-            params.mass = 1.0f;
+            params.mass = 0.5f;
 
-            real_T motor_assembly_weight = 0.055f; //weight for MT2212 motor for F450 frame
+            real_T motor_assembly_weight = 0.001f; //weight for MT2212 motor for F450 frame
             real_T box_mass = params.mass - params.rotor_count * motor_assembly_weight;
 
             // using rotor_param default, but if you want to change any of the rotor_params, call calculateMaxThrust() to recompute the max_thrust
@@ -353,9 +353,9 @@ namespace airlib
             //this has to be between max_thrust*rotor_count/10 (2.5kg using default parameters in RotorParams.hpp) and (idle throttle percentage)*max_thrust*rotor_count/10 (1.25kg using default parameters and SimpleFlight)
             //any value above the maximum would result in the motors not being able to lift the body even at max thrust,
             //and any value below the minimum would cause the drone to fly upwards on idling throttle (50% of the max throttle if using SimpleFlight)
-            params.mass = 1.0f;
+            params.mass = 0.5f;
 
-            real_T motor_assembly_weight = 0.055f; //weight for MT2212 motor for F450 frame
+            real_T motor_assembly_weight = 0.001f; //weight for MT2212 motor for F450 frame
             real_T box_mass = params.mass - params.rotor_count * motor_assembly_weight;
 
             // using rotor_param default, but if you want to change any of the rotor_params, call calculateMaxThrust() to recompute the max_thrust
@@ -387,8 +387,8 @@ namespace airlib
             //any value above the maximum would result in the motors not being able to lift the body even at max thrust,
             //and any value below the minimum would cause the drone to fly upwards on idling throttle (50% of the max throttle if using SimpleFlight)
 
-            params.mass = 1.0f; //can be varied from 0.800 to 1.600
-            real_T motor_assembly_weight = 0.055f; //weight for MT2212 motor for F450 frame  0.148
+            params.mass = 0.5f; //can be varied from 0.800 to 1.600
+            real_T motor_assembly_weight = 0.001f; //weight for MT2212 motor for F450 frame  0.148
             real_T box_mass = params.mass - params.rotor_count * motor_assembly_weight;
 
             // using rotor_param default, but if you want to change any of the rotor_params, call calculateMaxThrust() to recompute the max_thrust

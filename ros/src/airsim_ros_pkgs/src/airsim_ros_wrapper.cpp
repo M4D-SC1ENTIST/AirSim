@@ -656,14 +656,17 @@ void AirsimROSWrapper::trpy_cmd_cb(const kr_mav_msgs::TRPYCommand& trpy_cmd_msg)
     
     // For yaw
     //static_cast<msr::airlib::MultirotorRpcLibClient*>(airsim_client_.get())->moveByRollPitchYawrateZAsync(0.0, 0.0, yaw_rate, 0.0, 0.01);
-    double roll_rate = trpy_cmd_msg.angular_velocity.x;
-    double pitch_rate = trpy_cmd_msg.angular_velocity.y;
-    double yaw_rate = trpy_cmd_msg.angular_velocity.z;
+    double roll = trpy_cmd_msg.roll;
+    double pitch = trpy_cmd_msg.pitch;
+    double yaw = trpy_cmd_msg.yaw;
     
     double thrust = trpy_cmd_msg.thrust;
 
-    static_cast<msr::airlib::MultirotorRpcLibClient*>(airsim_client_.get())->moveByAngleRatesThrottleAsync(roll_rate,
-        pitch_rate, yaw_rate, thrust, 0.01);
+    // https://github.com/mavlink/mavros/issues/216 
+    // body-fixed NED → ROS ENU: (x y z)→(x -y -z) or (w x y z)→(x -y -z w)
+    // local NED → ROS ENU: (x y z)→(y x -z) or (w x y z)→(y x -z w)
+    static_cast<msr::airlib::MultirotorRpcLibClient*>(airsim_client_.get())->moveByRollPitchYawThrottleAsync(roll,
+        -pitch, -yaw, thrust, 0.01);
 
     return;
 }
