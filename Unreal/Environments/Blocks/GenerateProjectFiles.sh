@@ -15,9 +15,9 @@ if [[ ! -e "$UnrealDir" ]]; then
     exit 1
 fi
 
-if [ "$(uname)" == "Darwin" ]; then
+if [ "$(uname)" == "Linux" ]; then
     # Call UnrealEngine shell scrpit
-    pushd "$UnrealDir/Engine/Build/BatchFiles/Mac/" >/dev/null
+    pushd "$UnrealDir/Engine/Build/BatchFiles/Linux/" >/dev/null
     ./GenerateProjectFiles.sh "$SCRIPT_DIR/Blocks.uproject"
     popd >/dev/null
 else
