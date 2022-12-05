@@ -45,24 +45,19 @@ namespace airlib
         real_T revolutions_per_second;
         real_T max_speed; // in radians per second
         real_T max_speed_square;
-        //real_T max_thrust = 9999.179446268f; //computed from above formula for the given constants
-        //real_T max_torque = 0.055562f; //computed from above formula
-        real_T max_thrust = 99999.0f;
-        real_T max_torque = 99999.0f;
+        real_T max_thrust = 4.179446268f; //computed from above formula for the given constants
+        real_T max_torque = 0.055562f; //computed from above formula
 
         // call this method to recalculate thrust if you want to use different numbers for C_T, C_P, max_rpm, etc.
         void calculateMaxThrust()
         {
             revolutions_per_second = max_rpm / 60;
-            //max_speed = revolutions_per_second * 2 * M_PIf; // radians / sec
-            max_speed = 99999.0f;
+            max_speed = revolutions_per_second * 2 * M_PIf; // radians / sec
             max_speed_square = pow(max_speed, 2.0f);
 
             real_T nsquared = revolutions_per_second * revolutions_per_second;
-            //max_thrust = C_T * air_density * nsquared * static_cast<real_T>(pow(propeller_diameter, 4));
-            //max_torque = C_P * air_density * nsquared * static_cast<real_T>(pow(propeller_diameter, 5)) / (2 * M_PIf);
-            max_thrust = 99999.0f;
-            max_torque = 99999.0f;
+            max_thrust = C_T * air_density * nsquared * static_cast<real_T>(pow(propeller_diameter, 4));
+            max_torque = C_P * air_density * nsquared * static_cast<real_T>(pow(propeller_diameter, 5)) / (2 * M_PIf);
         }
     };
 }
