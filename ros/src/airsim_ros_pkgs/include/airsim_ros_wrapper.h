@@ -64,7 +64,6 @@ STRICT_MODE_OFF //todo what does this do?
 #include <unordered_map>
 #include <memory>
 #include <kr_mav_msgs/TRPYCommand.h>
-#include <kr_mav_msgs/PositionCommand.h>
     // #include "nodelet/nodelet.h"
 
     struct SimpleMatrix
@@ -236,9 +235,7 @@ private:
     // void vel_cmd_body_frame_cb(const airsim_ros_pkgs::VelCmd& msg, const std::string& vehicle_name);
     void gimbal_angle_quat_cmd_cb(const airsim_ros_pkgs::GimbalAngleQuatCmd& gimbal_angle_quat_cmd_msg);
     void gimbal_angle_euler_cmd_cb(const airsim_ros_pkgs::GimbalAngleEulerCmd& gimbal_angle_euler_cmd_msg);
-    //void trpy_cmd_cb(const kr_mav_msgs::TRPYCommand& trpy_cmd_msg);
-    void trpy_cmd_cb(const kr_mav_msgs::PositionCommand& trpy_cmd_msg);
-
+    void trpy_cmd_cb(const kr_mav_msgs::TRPYCommand& trpy_cmd_msg);
 
     // commands
     void car_cmd_cb(const airsim_ros_pkgs::CarControls::ConstPtr& msg, const std::string& vehicle_name);
