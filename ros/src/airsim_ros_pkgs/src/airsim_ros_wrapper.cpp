@@ -667,7 +667,7 @@ void AirsimROSWrapper::trpy_cmd_cb(const kr_mav_msgs::TRPYCommand& trpy_cmd_msg)
     // local NED → ROS ENU: (x y z)→(y x -z) or (w x y z)→(y x -z w)
 
     static_cast<msr::airlib::MultirotorRpcLibClient*>(airsim_client_.get())->moveByRollPitchYawThrottleAsync(roll,
-        pitch, -yaw, thrust, 0.01);
+        -pitch, -yaw, thrust, 0.01);
 
     return;
 }
