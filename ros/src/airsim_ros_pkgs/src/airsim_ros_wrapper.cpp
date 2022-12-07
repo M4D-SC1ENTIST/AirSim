@@ -1163,8 +1163,10 @@ ros::Time AirsimROSWrapper::update_state()
 
         if (airsim_mode_ == AIRSIM_MODE::DRONE) {
             auto drone = static_cast<MultiRotorROS*>(vehicle_ros.get());
+            auto rpc = static_cast<msr::airlib::MultirotorRpcLibClient*>(airsim_client_.get());
             drone->curr_drone_state = get_multirotor_client()->getMultirotorState(vehicle_ros->vehicle_name);
 
+            drone->truth_state = rpc->simGetGroundTruthKinematics(vehicle_ros->vehicle_name);
             vehicle_time = airsim_timestamp_to_ros(drone->curr_drone_state.timestamp);
             if (!got_sim_time) {
                 curr_ros_time = vehicle_time;
@@ -1292,18 +1294,18 @@ void AirsimROSWrapper::update_commands()
             auto drone = static_cast<MultiRotorROS*>(vehicle_ros.get());
 
             // send control commands from the last callback to airsim
-            //if (drone->has_vel_cmd) {
-            //    std::lock_guard<std::mutex> guard(drone_control_mutex_);
-            //    get_multirotor_client()->moveByVelocityAsync(drone->vel_cmd.x,
-            //                                                 drone->vel_cmd.y,
-            //                                                 drone->vel_cmd.z,
-            //                                                 vel_cmd_duration_,
-            //                                                 msr::airlib::DrivetrainType::MaxDegreeOfFreedom,
-            //                                                 drone->vel_cmd.yaw_mode,
-            //                                                 drone->vehicle_name);
-            //}
-            //drone->has_vel_cmd = false;
-            static_cast<msr::airlib::MultirotorRpcLibClient*>(airsim_client_.get())->moveByRollPitchYawThrottleAsync(0,0,0,0.65,0.025,"drone_1");
+            if (drone->has_vel_cmd) {
+                std::lock_guard<std::mutex> guard(drone_control_mutex_);
+                get_multirotor_client()->moveByVelocityAsync(drone->vel_cmd.x,
+                                                             drone->vel_cmd.y,
+                                                             drone->vel_cmd.z,
+                                                             vel_cmd_duration_,
+                                                             msr::airlib::DrivetrainType::MaxDegreeOfFreedom,
+                                                             drone->vel_cmd.yaw_mode,
+                                                             drone->vehicle_name);
+            }
+            drone->has_vel_cmd = false;
+            //static_cast<msr::airlib::MultirotorRpcLibClient*>(airsim_client_.get())->moveByRollPitchYawThrottleAsync(0,0,0,0.65,0.025,"drone_1");
         }
         else {
             // send control commands from the last callback to airsim
