@@ -63,7 +63,8 @@ STRICT_MODE_OFF //todo what does this do?
 #include <tf2/convert.h>
 #include <unordered_map>
 #include <memory>
-#include <kr_mav_msgs/TRPYCommand.h>
+//#include <kr_mav_msgs/TRPYCommand.h>
+#include <kr_mav_msgs/SO3Command.h>
     // #include "nodelet/nodelet.h"
 
     struct SimpleMatrix
@@ -202,6 +203,7 @@ private:
     public:
         /// State
         msr::airlib::MultirotorState curr_drone_state;
+        msr::airlib::Kinematics::State truth_state;
         // bool in_air_; // todo change to "status" and keep track of this
 
         ros::Subscriber vel_cmd_body_frame_sub;
@@ -235,7 +237,8 @@ private:
     // void vel_cmd_body_frame_cb(const airsim_ros_pkgs::VelCmd& msg, const std::string& vehicle_name);
     void gimbal_angle_quat_cmd_cb(const airsim_ros_pkgs::GimbalAngleQuatCmd& gimbal_angle_quat_cmd_msg);
     void gimbal_angle_euler_cmd_cb(const airsim_ros_pkgs::GimbalAngleEulerCmd& gimbal_angle_euler_cmd_msg);
-    void trpy_cmd_cb(const kr_mav_msgs::TRPYCommand& trpy_cmd_msg);
+    //void trpy_cmd_cb(const kr_mav_msgs::TRPYCommand& trpy_cmd_msg);
+    void so3_cmd_cb(const kr_mav_msgs::SO3Command& so3_cmd_msg);
 
     // commands
     void car_cmd_cb(const airsim_ros_pkgs::CarControls::ConstPtr& msg, const std::string& vehicle_name);
@@ -282,6 +285,7 @@ private:
     msr::airlib::Quaternionr get_airlib_quat(const geometry_msgs::Quaternion& geometry_msgs_quat) const;
     msr::airlib::Quaternionr get_airlib_quat(const tf2::Quaternion& tf2_quat) const;
     nav_msgs::Odometry get_odom_msg_from_multirotor_state(const msr::airlib::MultirotorState& drone_state) const;
+    nav_msgs::Odometry get_odom_msg_from_truth_state(const msr::airlib::Kinematics::State& truth_state) const;
     nav_msgs::Odometry get_odom_msg_from_car_state(const msr::airlib::CarApiBase::CarState& car_state) const;
     airsim_ros_pkgs::CarState get_roscarstate_msg_from_car_state(const msr::airlib::CarApiBase::CarState& car_state) const;
     msr::airlib::Pose get_airlib_pose(const float& x, const float& y, const float& z, const msr::airlib::Quaternionr& airlib_quat) const;
@@ -369,6 +373,7 @@ private:
 
     /// ROS params
     double vel_cmd_duration_;
+    double control_duration_;
 
     /// ROS Timers.
     ros::Timer airsim_img_response_timer_;
@@ -389,7 +394,8 @@ private:
 
     ros::Subscriber gimbal_angle_quat_cmd_sub_;
     ros::Subscriber gimbal_angle_euler_cmd_sub_;
-    ros::Subscriber trpy_cmd_sub_;
+    //ros::Subscriber trpy_cmd_sub_;
+    ros::Subscriber so3_cmd_sub_;
 
     static constexpr char CAM_YML_NAME[] = "camera_name";
     static constexpr char WIDTH_YML_NAME[] = "image_width";

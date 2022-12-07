@@ -99,7 +99,8 @@ void AirsimROSWrapper::initialize_ros()
     nh_private_.param("odom_frame_id", odom_frame_id_, odom_frame_id_);
     isENU_ = !(odom_frame_id_ == AIRSIM_ODOM_FRAME_ID);
     nh_private_.param("coordinate_system_enu", isENU_, isENU_);
-    vel_cmd_duration_ = 0.05; // todo rosparam
+    control_duration_ = 0.025;
+    //vel_cmd_duration_ = 0.05; // todo rosparam
     // todo enforce dynamics constraints in this node as well?
     // nh_.getParam("max_vert_vel_", max_vert_vel_);
     // nh_.getParam("max_horz_vel", max_horz_vel_)
@@ -115,7 +116,8 @@ void AirsimROSWrapper::create_ros_pubs_from_settings_json()
     gimbal_angle_quat_cmd_sub_ = nh_private_.subscribe("gimbal_angle_quat_cmd", 50, &AirsimROSWrapper::gimbal_angle_quat_cmd_cb, this);
     gimbal_angle_euler_cmd_sub_ = nh_private_.subscribe("gimbal_angle_euler_cmd", 50, &AirsimROSWrapper::gimbal_angle_euler_cmd_cb, this);
     origin_geo_point_pub_ = nh_private_.advertise<airsim_ros_pkgs::GPSYaw>("origin_geo_point", 10);
-    trpy_cmd_sub_ = nh_private_.subscribe("/quadrotor/so3_trpy/trpy_cmd",50,&AirsimROSWrapper::trpy_cmd_cb,this, ros::TransportHints().tcpNoDelay());
+    //trpy_cmd_sub_ = nh_private_.subscribe("/quadrotor/so3_trpy/trpy_cmd",50,&AirsimROSWrapper::trpy_cmd_cb,this, ros::TransportHints().tcpNoDelay());
+    so3_cmd_sub_ = nh_private_.subscribe("/quadrotor/so3_cmd", 50, &AirsimROSWrapper::so3_cmd_cb, this, ros::TransportHints().tcpNoDelay());
 
     airsim_img_request_vehicle_name_pair_vec_.clear();
     image_pub_vec_.clear();
@@ -149,7 +151,7 @@ void AirsimROSWrapper::create_ros_pubs_from_settings_json()
 
         append_static_vehicle_tf(vehicle_ros.get(), *vehicle_setting);
 
-        vehicle_ros->odom_local_pub = nh_private_.advertise<nav_msgs::Odometry>(curr_vehicle_name + "/" + odom_frame_id_, 10);
+        vehicle_ros->odom_local_pub = nh_private_.advertise<nav_msgs::Odometry>(curr_vehicle_name + "/" + odom_frame_id_, 1);
 
         vehicle_ros->env_pub = nh_private_.advertise<airsim_ros_pkgs::Environment>(curr_vehicle_name + "/environment", 10);
 
@@ -325,10 +327,7 @@ void AirsimROSWrapper::create_ros_pubs_from_settings_json()
         double update_airsim_img_response_every_n_sec;
         nh_private_.getParam("update_airsim_img_response_every_n_sec", update_airsim_img_response_every_n_sec);
 
-        ros::TimerOptions timer_options(ros::Duration(update_airsim_img_response_every_n_sec),
-                                        boost::bind(&AirsimROSWrapper::img_response_timer_cb, this, _1),
-                                        &img_timer_cb_queue_);
-
+        ros::TimerOptions timer_options(ros::Duration(update_airsim_img_response_every_n_sec), boost::bind(&AirsimROSWrapper::img_response_timer_cb, this, _1), &img_timer_cb_queue_);
         airsim_img_response_timer_ = nh_private_.createTimer(timer_options);
         is_used_img_timer_cb_queue_ = true;
     }
@@ -643,6 +642,7 @@ void AirsimROSWrapper::gimbal_angle_euler_cmd_cb(const airsim_ros_pkgs::GimbalAn
 }
 
 
+/*
 void AirsimROSWrapper::trpy_cmd_cb(const kr_mav_msgs::TRPYCommand& trpy_cmd_msg){
     
     //float vx = pos_cmd_msg.velocity.x;
@@ -666,10 +666,36 @@ void AirsimROSWrapper::trpy_cmd_cb(const kr_mav_msgs::TRPYCommand& trpy_cmd_msg)
     // body-fixed NED → ROS ENU: (x y z)→(x -y -z) or (w x y z)→(x -y -z w)
     // local NED → ROS ENU: (x y z)→(y x -z) or (w x y z)→(y x -z w)
 
-    static_cast<msr::airlib::MultirotorRpcLibClient*>(airsim_client_.get())->moveByRollPitchYawThrottleAsync(roll,
-        -pitch, -yaw, thrust, 0.01);
+    static_cast<msr::airlib::MultirotorRpcLibClient*>(airsim_client_.get())->moveByRollPitchYawThrottleAsync(pitch,
+        roll, -yaw, thrust, 0.01);
 
     return;
+}
+*/
+void AirsimROSWrapper::so3_cmd_cb(const kr_mav_msgs::SO3Command& so3_cmd_msg){
+    Eigen::Quaternionf curr_orientation(so3_cmd_msg.orientation.w, 
+                                        so3_cmd_msg.orientation.x, 
+                                        so3_cmd_msg.orientation.y, 
+                                        so3_cmd_msg.orientation.z);
+    
+    //Eigen::Quaternionf curr_orientation(1.0, 0.0, 0.0, 0.0);
+
+    Eigen::Matrix3f R_cur(curr_orientation);
+
+    Eigen::Vector3f force(so3_cmd_msg.force.x, so3_cmd_msg.force.y, so3_cmd_msg.force.z);
+    //Eigen::Vector3f force(0.0, 0.0, 10.0);
+
+    float thrust = force(0) * R_cur(0, 2) + force(1) * R_cur(1, 2) + force(2) * R_cur(2, 2);
+
+    float roll_rate = so3_cmd_msg.angular_velocity.x;
+    float pitch_rate = so3_cmd_msg.angular_velocity.y;
+    float yaw_rate = so3_cmd_msg.angular_velocity.z;
+    //float roll_rate = 0.0;
+    //float pitch_rate = 0.0;
+    //float yaw_rate = 0.0;
+
+    static_cast<msr::airlib::MultirotorRpcLibClient*>(airsim_client_.get())->moveByAngleRatesThrottleAsync(roll_rate,
+        -pitch_rate, -yaw_rate, thrust, 0.01);
 }
 
 
@@ -712,8 +738,29 @@ nav_msgs::Odometry AirsimROSWrapper::get_odom_msg_from_car_state(const msr::airl
     if (isENU_) {
         std::swap(odom_msg.pose.pose.position.x, odom_msg.pose.pose.position.y);
         odom_msg.pose.pose.position.z = -odom_msg.pose.pose.position.z;
-        std::swap(odom_msg.pose.pose.orientation.x, odom_msg.pose.pose.orientation.y);
+
+        std::swap(odom_msg.pose.pose.orientation.x, odom_msg.pose.pose.orientation.y);        
         odom_msg.pose.pose.orientation.z = -odom_msg.pose.pose.orientation.z;
+        double roll,pitch,yaw;
+        Eigen::Quaterniond attitude_quater;
+        attitude_quater.w() = odom_msg.pose.pose.orientation.w;
+        attitude_quater.x() = odom_msg.pose.pose.orientation.x;
+        attitude_quater.y() = odom_msg.pose.pose.orientation.y;
+        attitude_quater.z() = odom_msg.pose.pose.orientation.z;
+        Eigen::Matrix3d rota = attitude_quater.toRotationMatrix();
+        Eigen::Matrix3d nedtoenu;
+        nedtoenu << 0,1,0,
+                    1,0,0,
+                    0,0,-1;
+        rota = nedtoenu*rota;
+        Eigen::Quaterniond enuq(rota);
+
+        // std::cout<<"w: "<<enuq.w()<<" x: "<<enuq.x()<<" y: "<<enuq.y()<<" z: "<<enuq.z();
+        odom_msg.pose.pose.orientation.w = enuq.w();
+        odom_msg.pose.pose.orientation.x = enuq.x();
+        odom_msg.pose.pose.orientation.y = enuq.y();
+        odom_msg.pose.pose.orientation.z = enuq.z();
+
         std::swap(odom_msg.twist.twist.linear.x, odom_msg.twist.twist.linear.y);
         odom_msg.twist.twist.linear.z = -odom_msg.twist.twist.linear.z;
         std::swap(odom_msg.twist.twist.angular.x, odom_msg.twist.twist.angular.y);
@@ -745,11 +792,88 @@ nav_msgs::Odometry AirsimROSWrapper::get_odom_msg_from_multirotor_state(const ms
     if (isENU_) {
         std::swap(odom_msg.pose.pose.position.x, odom_msg.pose.pose.position.y);
         odom_msg.pose.pose.position.z = -odom_msg.pose.pose.position.z;
-        std::swap(odom_msg.pose.pose.orientation.x, odom_msg.pose.pose.orientation.y);
+
+        std::swap(odom_msg.pose.pose.orientation.x, odom_msg.pose.pose.orientation.y);        
         odom_msg.pose.pose.orientation.z = -odom_msg.pose.pose.orientation.z;
+        double roll,pitch,yaw;
+        Eigen::Quaterniond attitude_quater;
+        attitude_quater.w() = odom_msg.pose.pose.orientation.w;
+        attitude_quater.x() = odom_msg.pose.pose.orientation.x;
+        attitude_quater.y() = odom_msg.pose.pose.orientation.y;
+        attitude_quater.z() = odom_msg.pose.pose.orientation.z;
+        Eigen::Matrix3d rota = attitude_quater.toRotationMatrix();
+        Eigen::Matrix3d nedtoenu;
+        nedtoenu << 0,1,0,
+                    1,0,0,
+                    0,0,-1;
+        rota = nedtoenu*rota;
+        Eigen::Quaterniond enuq(rota);
+
+        // std::cout<<"w: "<<enuq.w()<<" x: "<<enuq.x()<<" y: "<<enuq.y()<<" z: "<<enuq.z();
+        odom_msg.pose.pose.orientation.w = enuq.w();
+        odom_msg.pose.pose.orientation.x = enuq.x();
+        odom_msg.pose.pose.orientation.y = enuq.y();
+        odom_msg.pose.pose.orientation.z = enuq.z();
+
         std::swap(odom_msg.twist.twist.linear.x, odom_msg.twist.twist.linear.y);
         odom_msg.twist.twist.linear.z = -odom_msg.twist.twist.linear.z;
         std::swap(odom_msg.twist.twist.angular.x, odom_msg.twist.twist.angular.y);
+        odom_msg.twist.twist.angular.z = -odom_msg.twist.twist.angular.z;
+    }
+
+    return odom_msg;
+}
+
+nav_msgs::Odometry AirsimROSWrapper::get_odom_msg_from_truth_state(const msr::airlib::Kinematics::State& truth_state) const
+{
+    nav_msgs::Odometry odom_msg;
+    odom_msg.pose.pose.position.x = truth_state.pose.position.x();
+    odom_msg.pose.pose.position.y = truth_state.pose.position.y();
+    odom_msg.pose.pose.position.z = truth_state.pose.position.z();
+    odom_msg.pose.pose.orientation.x = truth_state.pose.orientation.x();
+    odom_msg.pose.pose.orientation.y = truth_state.pose.orientation.y();
+    odom_msg.pose.pose.orientation.z = truth_state.pose.orientation.z();
+    odom_msg.pose.pose.orientation.w = truth_state.pose.orientation.w();
+    odom_msg.twist.twist.linear.x = truth_state.twist.linear.x();
+    odom_msg.twist.twist.linear.y = truth_state.twist.linear.y();
+    odom_msg.twist.twist.linear.z = truth_state.twist.linear.z();
+    odom_msg.twist.twist.angular.x = truth_state.twist.angular.x();
+    odom_msg.twist.twist.angular.y = truth_state.twist.angular.y();
+    odom_msg.twist.twist.angular.z = truth_state.twist.angular.z();
+
+    if (isENU_)
+    {
+        std::swap(odom_msg.pose.pose.position.x, odom_msg.pose.pose.position.y);
+        odom_msg.pose.pose.position.z = -odom_msg.pose.pose.position.z;
+
+        double roll,pitch,yaw;
+        Eigen::Quaterniond attitude_quater;
+        attitude_quater.w() = odom_msg.pose.pose.orientation.w;
+        attitude_quater.x() = odom_msg.pose.pose.orientation.x;
+        attitude_quater.y() = odom_msg.pose.pose.orientation.y;
+        attitude_quater.z() = odom_msg.pose.pose.orientation.z;//NED
+        Eigen::Matrix3d rota = attitude_quater.toRotationMatrix();
+        Eigen::Matrix3d nedtoenu;
+        nedtoenu << 0,1,0,
+                    1,0,0,
+                    0,0,-1;//enu
+        Eigen::Matrix3d body1tobody2;
+        body1tobody2<<1,0,0,
+                      0,-1,0,
+                      0,0,-1;
+        rota = nedtoenu*rota;
+        rota = rota*body1tobody2;
+        Eigen::Quaterniond enuq(rota);
+
+        odom_msg.pose.pose.orientation.w = enuq.w();
+        odom_msg.pose.pose.orientation.x = enuq.x();
+        odom_msg.pose.pose.orientation.y = enuq.y();
+        odom_msg.pose.pose.orientation.z = enuq.z();
+
+        std::swap(odom_msg.twist.twist.linear.x, odom_msg.twist.twist.linear.y);
+        odom_msg.twist.twist.linear.z = -odom_msg.twist.twist.linear.z;
+
+        odom_msg.twist.twist.angular.y = -odom_msg.twist.twist.angular.y;
         odom_msg.twist.twist.angular.z = -odom_msg.twist.twist.angular.z;
     }
 
@@ -1050,7 +1174,8 @@ ros::Time AirsimROSWrapper::update_state()
             vehicle_ros->gps_sensor_msg = get_gps_sensor_msg_from_airsim_geo_point(drone->curr_drone_state.gps_location);
             vehicle_ros->gps_sensor_msg.header.stamp = vehicle_time;
 
-            vehicle_ros->curr_odom = get_odom_msg_from_multirotor_state(drone->curr_drone_state);
+            //vehicle_ros->curr_odom = get_odom_msg_from_multirotor_state(drone->curr_drone_state);
+            vehicle_ros->curr_odom = get_odom_msg_from_truth_state(drone->truth_state);
         }
         else {
             auto car = static_cast<CarROS*>(vehicle_ros.get());
@@ -1103,6 +1228,7 @@ void AirsimROSWrapper::publish_vehicle_state()
         }
 
         // odom and transforms
+        vehicle_ros->curr_odom.header.stamp = ros::Time::now();
         vehicle_ros->odom_local_pub.publish(vehicle_ros->curr_odom);
         publish_odom_tf(vehicle_ros->curr_odom);
 
@@ -1166,17 +1292,18 @@ void AirsimROSWrapper::update_commands()
             auto drone = static_cast<MultiRotorROS*>(vehicle_ros.get());
 
             // send control commands from the last callback to airsim
-            if (drone->has_vel_cmd) {
-                std::lock_guard<std::mutex> guard(drone_control_mutex_);
-                get_multirotor_client()->moveByVelocityAsync(drone->vel_cmd.x,
-                                                             drone->vel_cmd.y,
-                                                             drone->vel_cmd.z,
-                                                             vel_cmd_duration_,
-                                                             msr::airlib::DrivetrainType::MaxDegreeOfFreedom,
-                                                             drone->vel_cmd.yaw_mode,
-                                                             drone->vehicle_name);
-            }
-            drone->has_vel_cmd = false;
+            //if (drone->has_vel_cmd) {
+            //    std::lock_guard<std::mutex> guard(drone_control_mutex_);
+            //    get_multirotor_client()->moveByVelocityAsync(drone->vel_cmd.x,
+            //                                                 drone->vel_cmd.y,
+            //                                                 drone->vel_cmd.z,
+            //                                                 vel_cmd_duration_,
+            //                                                 msr::airlib::DrivetrainType::MaxDegreeOfFreedom,
+            //                                                 drone->vel_cmd.yaw_mode,
+            //                                                 drone->vehicle_name);
+            //}
+            //drone->has_vel_cmd = false;
+            static_cast<msr::airlib::MultirotorRpcLibClient*>(airsim_client_.get())->moveByRollPitchYawThrottleAsync(0,0,0,0.65,0.025,"drone_1");
         }
         else {
             // send control commands from the last callback to airsim
