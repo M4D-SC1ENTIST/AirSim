@@ -1110,20 +1110,20 @@ void AirsimROSWrapper::drone_state_timer_cb(const ros::TimerEvent& event)
         const auto now = update_state();
 
         // on init, will publish 0 to /clock as expected for use_sim_time compatibility
-        if (!airsim_client_->simIsPaused()) {
+        //if (!airsim_client_->simIsPaused()) {
             // airsim_client needs to provide the simulation time in a future version of the API
-            ros_clock_.clock = now;
-        }
+        //    ros_clock_.clock = now;
+        //}
         // publish the simulation clock
-        if (publish_clock_) {
-            clock_pub_.publish(ros_clock_);
-        }
+        //if (publish_clock_) {
+        //    clock_pub_.publish(ros_clock_);
+        //}
 
         // publish vehicle state, odom, and all basic sensor types
         publish_vehicle_state();
 
         // send any commands out to the vehicles
-        update_commands();
+        //update_commands();
     }
     catch (rpc::rpc_error& e) {
         std::cout << "error" << std::endl;
