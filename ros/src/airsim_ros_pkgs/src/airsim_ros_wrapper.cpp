@@ -696,39 +696,8 @@ void AirsimROSWrapper::so3_cmd_cb(const kr_mav_msgs::SO3Command& so3_cmd_msg){
     //float yaw_rate = 0.0;
     ROS_INFO_STREAM("====DEBUG YAW RATE: " << yaw_rate << "====");
 
-    float min_angular_rate_thresh = 0.0001f;
-    
-
-    if (abs(roll_rate) > min_angular_rate_thresh && abs(pitch_rate) > min_angular_rate_thresh && abs(yaw_rate) > min_angular_rate_thresh)
-    {
-        static_cast<msr::airlib::MultirotorRpcLibClient*>(airsim_client_.get())->moveByAngleRatesThrottleAsync(roll_rate,
+    get_multirotor_client()->moveByAngleRatesThrottleAsync(roll_rate,
             -pitch_rate, -yaw_rate, thrust, 0.01);
-    }
-    else
-    {
-        thrust = force(0) * R_cur(0, 2) + force(1) * R_cur(1, 2) + force(2) * R_cur(2, 2);
-        if (abs(roll_rate) > min_angular_rate_thresh && abs(pitch_rate) > min_angular_rate_thresh)
-            static_cast<msr::airlib::MultirotorRpcLibClient*>(airsim_client_.get())->moveByAngleRatesThrottleAsync(roll_rate,
-                -pitch_rate, 0.0, thrust, 0.01);
-        else if (abs(roll_rate) > min_angular_rate_thresh && abs(yaw_rate) > min_angular_rate_thresh)
-            static_cast<msr::airlib::MultirotorRpcLibClient*>(airsim_client_.get())->moveByAngleRatesThrottleAsync(roll_rate,
-                0.0, -yaw_rate, thrust, 0.01);
-        else if (abs(pitch_rate) > min_angular_rate_thresh && abs(yaw_rate) > min_angular_rate_thresh)
-            static_cast<msr::airlib::MultirotorRpcLibClient*>(airsim_client_.get())->moveByAngleRatesThrottleAsync(0.0,
-                -pitch_rate, -yaw_rate, thrust, 0.01);
-        else if (abs(roll_rate) > min_angular_rate_thresh)
-            static_cast<msr::airlib::MultirotorRpcLibClient*>(airsim_client_.get())->moveByAngleRatesThrottleAsync(roll_rate,
-                0.0, 0.0, thrust, 0.01);
-        else if (abs(pitch_rate) > min_angular_rate_thresh)
-            static_cast<msr::airlib::MultirotorRpcLibClient*>(airsim_client_.get())->moveByAngleRatesThrottleAsync(0.0,
-                -pitch_rate, 0.0, thrust, 0.01);
-        else if (abs(yaw_rate) > min_angular_rate_thresh)
-            static_cast<msr::airlib::MultirotorRpcLibClient*>(airsim_client_.get())->moveByAngleRatesThrottleAsync(0.0,
-                0.0, -yaw_rate, thrust, 0.01);
-        else
-            static_cast<msr::airlib::MultirotorRpcLibClient*>(airsim_client_.get())->moveByAngleRatesThrottleAsync(0.0,
-                0.0, 0.0, thrust, 0.01);
-    }
 }
 
 
