@@ -700,13 +700,20 @@ void AirsimROSWrapper::so3_cmd_cb(const kr_mav_msgs::SO3Command& so3_cmd_msg){
 
     if (yaw_rate == -0 || isnan(yaw_rate))
         yaw_rate = 0;
+
+    if (thrust == -0 || isnan(thrust))
+        thrust = 0;
+
     //float roll_rate = 0.0;
     //float pitch_rate = 0.0;
     //float yaw_rate = 0.0;
-    ROS_INFO_STREAM("====DEBUG ROLL RATE: " << roll_rate << "====");
+    //ROS_INFO_STREAM("====DEBUG ROLL RATE: " << roll_rate << "====");
+    //ROS_INFO_STREAM("====DEBUG PITCH RATE: " << pitch_rate << "====");
     //ROS_INFO_STREAM("====DEBUG YAW RATE: " << yaw_rate << "====");
 
-    get_multirotor_client()->moveByAngleRatesThrottleAsync(roll_rate, -0, -yaw_rate, thrust, 0.01);
+    //ROS_INFO_STREAM("====DEBUG THRUST: " << thrust << "====");
+
+    get_multirotor_client()->moveByAngleRatesThrottleAsync(pitch_rate, -roll_rate, -yaw_rate, thrust, 0.01);
 }
 
 
