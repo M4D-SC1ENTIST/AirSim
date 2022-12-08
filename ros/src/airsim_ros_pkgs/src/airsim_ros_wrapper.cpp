@@ -117,7 +117,7 @@ void AirsimROSWrapper::create_ros_pubs_from_settings_json()
     gimbal_angle_euler_cmd_sub_ = nh_private_.subscribe("gimbal_angle_euler_cmd", 50, &AirsimROSWrapper::gimbal_angle_euler_cmd_cb, this);
     origin_geo_point_pub_ = nh_private_.advertise<airsim_ros_pkgs::GPSYaw>("origin_geo_point", 10);
     //trpy_cmd_sub_ = nh_private_.subscribe("/quadrotor/so3_trpy/trpy_cmd",50,&AirsimROSWrapper::trpy_cmd_cb,this, ros::TransportHints().tcpNoDelay());
-    so3_cmd_sub_ = nh_private_.subscribe("/quadrotor/so3_cmd", 50, &AirsimROSWrapper::so3_cmd_cb, this, ros::TransportHints().tcpNoDelay());
+    so3_cmd_sub_ = nh_private_.subscribe("/quadrotor/so3_cmd", 10, &AirsimROSWrapper::so3_cmd_cb, this, ros::TransportHints().tcpNoDelay());
 
     airsim_img_request_vehicle_name_pair_vec_.clear();
     image_pub_vec_.clear();
@@ -691,13 +691,22 @@ void AirsimROSWrapper::so3_cmd_cb(const kr_mav_msgs::SO3Command& so3_cmd_msg){
     float roll_rate = so3_cmd_msg.angular_velocity.x;
     float pitch_rate = so3_cmd_msg.angular_velocity.y;
     float yaw_rate = so3_cmd_msg.angular_velocity.z;
+
+    if (roll_rate == -0 || isnan(roll_rate))
+        roll_rate = 0;
+
+    if (pitch_rate == -0 || isnan(pitch_rate))
+        pitch_rate = 0;
+
+    if (yaw_rate == -0 || isnan(yaw_rate))
+        yaw_rate = 0;
     //float roll_rate = 0.0;
     //float pitch_rate = 0.0;
     //float yaw_rate = 0.0;
-    ROS_INFO_STREAM("====DEBUG YAW RATE: " << yaw_rate << "====");
+    ROS_INFO_STREAM("====DEBUG ROLL RATE: " << roll_rate << "====");
+    //ROS_INFO_STREAM("====DEBUG YAW RATE: " << yaw_rate << "====");
 
-    get_multirotor_client()->moveByAngleRatesThrottleAsync(roll_rate,
-            -pitch_rate, -yaw_rate, thrust, 0.01);
+    get_multirotor_client()->moveByAngleRatesThrottleAsync(roll_rate, -0, -yaw_rate, thrust, 0.01);
 }
 
 
