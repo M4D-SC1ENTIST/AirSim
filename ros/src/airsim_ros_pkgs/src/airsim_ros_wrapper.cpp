@@ -713,7 +713,7 @@ void AirsimROSWrapper::so3_cmd_cb(const kr_mav_msgs::SO3Command& so3_cmd_msg){
 
     //ROS_INFO_STREAM("====DEBUG THRUST: " << thrust << "====");
 
-    get_multirotor_client()->moveByAngleRatesThrottleAsync(pitch_rate, -roll_rate, -yaw_rate, thrust, 0.01);
+    get_multirotor_client()->moveByAngleRatesThrottleAsync(roll_rate, -pitch_rate, -yaw_rate, thrust, 0.01);
 }
 
 
